@@ -28,12 +28,22 @@ resource "google_storage_bucket" "static-site" {
   }
 }
 
-resource "google_service_account" "service_account" {
+resource "google_service_account" "gcs-admin" {
   account_id = "turborepo-remote-cache-runner"
 }
 
-resource "google_storage_hmac_key" "key" {
-  service_account_email = google_service_account.service_account.email
+resource "google_service_account_key" "gcs-admin-key" {
+  service_account_id = google_service_account.gcs-admin.name
+}
+
+locals {
+  decoded_key = jsondecode(base64decode(google_service_account_key.gcs-admin-key.private_key))
+}
+
+resource "google_project_iam_member" "gcs-admin" {
+  project = var.project_id
+  role    = "roles/storage.admin"
+  member  = "serviceAccount:${google_service_account.gcs-admin.email}"
 }
 
 resource "google_project_service" "artifacts" {
@@ -64,28 +74,24 @@ resource "google_cloud_run_service" "default" {
           value = var.turbo_token
         }
         env {
-          name  = "AWS_ACCESS_KEY_ID"
-          value = google_storage_hmac_key.key.access_id
-        }
-        env {
-          name  = "AWS_SECRET_ACCESS_KEY"
-          value = google_storage_hmac_key.key.secret
-        }
-        env {
-          name  = "S3_ENDPOINT"
-          value = "https://storage.googleapis.com"
-        }
-        env {
-          name  = "AWS_REGION"
-          value = "auto"
-        }
-        env {
           name  = "STORAGE_PROVIDER"
-          value = "s3"
+          value = "google-cloud-storage"
         }
         env {
           name  = "STORAGE_PATH"
           value = var.bucket_name
+        }
+        env {
+          name  = "GCS_PROJECT_ID"
+          value = var.project_id
+        }
+        env {
+          name  = "GCS_CLIENT_EMAIL"
+          value = google_service_account.gcs-admin.email
+        }
+        env {
+          name  = "GCS_PRIVATE_KEY"
+          value = local.decoded_key.private_key
         }
       }
     }
