@@ -4,7 +4,7 @@ Easy self-hosting and management Turborepo remote cache（[ducktors/turborepo-re
 
 <img width="800" alt="architecture" src="https://github.com/kj455/turborepo-remote-cache-cr-gcs/assets/38521709/4c256d26-c8ba-46e9-87bd-7f4fe41e652c" style="margin: 16px 0">
 
-## 🚀 Setup
+## 🚀 Usage
 1. Clone this repository
 2. Setup Terraform and enable "Resource Manager API" on Google Cloud
 3. Create service accounts with editor and IAM administrator roles
@@ -41,4 +41,11 @@ Easy self-hosting and management Turborepo remote cache（[ducktors/turborepo-re
 
 10. Remote cache server is ready to use!!! 🚀
 
-    If you push another image into the artifact registry, a new revision will be created automatically.
+    ```sh
+    turbo run ${command} \
+    --api=${cloud run url} \
+    --team=${your team name} \
+    --token=${turbo_token in terraform.tfvars}
+    ```
+
+11. (If you push another image into the artifact registry, a new revision will be created automatically)

@@ -109,7 +109,9 @@ function validateTag(tag) {
     return false;
   }
 
-  return tag.includes('docker.pkg.dev');
+  const targets = ['docker.pkg.dev', 'turborepo-remote-cache'];
+
+  return targets.some((target) => tag.includes(target));
 }
 
 function validateAction(action) {

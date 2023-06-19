@@ -38,7 +38,7 @@ resource "google_service_account_key" "gcs-admin-key" {
 
 locals {
   decoded_key      = jsondecode(base64decode(google_service_account_key.gcs-admin-key.private_key))
-  run_service_name = "cloudrun-turborepo-remote-cache-runner"
+  run_service_name = "turborepo-remote-cache-runner"
 }
 
 resource "google_project_iam_member" "gcs-admin" {
@@ -47,7 +47,6 @@ resource "google_project_iam_member" "gcs-admin" {
   member  = "serviceAccount:${google_service_account.gcs-admin.email}"
 }
 
-# Artifact Registry へのイメージプッシュを送信する Pub/Sub トピック
 resource "google_pubsub_topic" "gcr" {
   name = "gcr"
 }
@@ -56,7 +55,7 @@ resource "google_project_service" "artifacts" {
   service = "artifactregistry.googleapis.com"
 }
 
-resource "google_artifact_registry_repository" "my-repo" {
+resource "google_artifact_registry_repository" "remote-cache-repo" {
   location      = var.region
   repository_id = "turborepo-remote-cache-repo"
   format        = "DOCKER"
@@ -114,7 +113,7 @@ resource "google_cloud_run_service" "default" {
   template {
     spec {
       containers {
-        image = "gcr.io/cloudrun/hello" # Temporarily use Google's Hello World image
+        image = "gcr.io/cloudrun/hello" # Temporarily use Google's Hello World image. This will be replaced by Cloud Functions.
       }
     }
   }
