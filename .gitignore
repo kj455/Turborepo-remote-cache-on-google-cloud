@@ -33,5 +33,6 @@ override.tf.json
 .terraformrc
 terraform.rc
 
+# Custom settings
 credentials.json
 functions.zip
