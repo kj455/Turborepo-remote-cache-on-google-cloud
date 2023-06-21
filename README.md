@@ -20,6 +20,7 @@ Easy self-hosting and management Turborepo remote cache（[ducktors/turborepo-re
     ```
 7. Exec terraform
     ```sh
+    cd terraform
     terraform init
     terraform plan
     terraform apply
