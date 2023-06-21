@@ -1,5 +1,8 @@
 const { google } = require('googleapis');
+const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 const run = google.run('v1');
+
+const secretManagerServiceClient = new SecretManagerServiceClient();
 
 exports.createRevision = async (event, _context) => {
   const parsedEvent = parseEventMessage(event);
@@ -27,8 +30,10 @@ exports.createRevision = async (event, _context) => {
     turboToken,
     gcsBucketName,
     gcsClientEmail,
-    gcsPrivateKey,
+    gcsPrivateKeySecretName,
   } = getEnv();
+
+  const gcsPrivateKey = await getSecret(gcsPrivateKeySecretName);
 
   const request = {
     name: `projects/${projectId}/locations/${location}/services/${serviceId}`,
@@ -126,6 +131,18 @@ function getEnv() {
     turboToken: process.env.TURBO_TOKEN,
     gcsBucketName: process.env.GCS_BUCKET_NAME,
     gcsClientEmail: process.env.GCS_CLIENT_EMAIL,
-    gcsPrivateKey: process.env.GCS_PRIVATE_KEY,
+    gcsPrivateKeySecretName: process.env.GCS_PRIVATE_KEY_SECRET_NAME,
   };
+}
+
+async function getSecret(secretName) {
+  const { projectId } = getEnv();
+  const [version] = await secretManagerServiceClient.accessSecretVersion({
+    name: `projects/${projectId}/secrets/${secretName}/versions/latest`,
+  });
+
+  // Extract the payload as a string.
+  const payload = version.payload.data.toString('utf8');
+
+  return payload;
 }

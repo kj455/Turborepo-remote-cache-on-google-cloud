@@ -1,3 +1,0 @@
-docker pull fox1t/turborepo-remote-cache:1.13.2@sha256:ddf85af97b829412d938c596998e3a53daeafe00264ea68008185e32efed34b2
-docker tag fox1t/turborepo-remote-cache:1.13.2@sha256:ddf85af97b829412d938c596998e3a53daeafe00264ea68008185e32efed34b2 asia-northeast1-docker.pkg.dev/practice-356200/turborepo-remote-cache-repo/turborepo-remote-cache:1.13.2
-docker push asia-northeast1-docker.pkg.dev/practice-356200/turborepo-remote-cache-repo/turborepo-remote-cache:1.13.2

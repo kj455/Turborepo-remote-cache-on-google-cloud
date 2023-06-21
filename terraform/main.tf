@@ -63,6 +63,30 @@ resource "google_artifact_registry_repository" "remote-cache-repo" {
   depends_on = [google_project_service.artifacts]
 }
 
+resource "google_project_service" "secret-manager" {
+  service = "secretmanager.googleapis.com"
+}
+
+resource "google_secret_manager_secret" "sa_key_secret" {
+  secret_id = "sa-key-secret"
+  labels = {
+    label = "sa-key-secret"
+  }
+
+  replication {
+    automatic = true
+  }
+
+  depends_on = [google_project_service.secret-manager]
+}
+
+resource "google_secret_manager_secret_version" "sa_key_secret_version" {
+  secret      = google_secret_manager_secret.sa_key_secret.id
+  secret_data = local.decoded_key.private_key
+
+  depends_on = [google_project_service.secret-manager]
+}
+
 data "archive_file" "functions" {
   type        = "zip"
   source_dir  = "../functions"
@@ -73,6 +97,12 @@ resource "google_storage_bucket_object" "archive" {
   name   = "functions_${data.archive_file.functions.output_md5}.zip"
   bucket = google_storage_bucket.turborepo-remote-cache.name
   source = data.archive_file.functions.output_path
+}
+
+resource "google_project_iam_member" "function_secret_accessor" {
+  project = var.project_id
+  role    = "roles/secretmanager.secretAccessor"
+  member  = "serviceAccount:${google_cloudfunctions_function.revision-creator.service_account_email}"
 }
 
 resource "google_cloudfunctions_function" "revision-creator" {
@@ -86,14 +116,14 @@ resource "google_cloudfunctions_function" "revision-creator" {
   entry_point           = "createRevision"
 
   environment_variables = {
-    PROJECT_ID       = var.project_id
-    LOCATION         = var.region
-    SERVICE_ID       = local.run_service_name
-    TURBO_TOKEN      = var.turbo_token
-    GCS_BUCKET_NAME  = var.bucket_name
-    GCS_CLIENT_EMAIL = google_service_account.gcs-admin.email
-    GCS_PRIVATE_KEY  = local.decoded_key.private_key
-    SOURCE_SHA       = data.archive_file.functions.output_md5 # need to be updated when archive is updated
+    PROJECT_ID                  = var.project_id
+    LOCATION                    = var.region
+    SERVICE_ID                  = local.run_service_name
+    TURBO_TOKEN                 = var.turbo_token
+    GCS_BUCKET_NAME             = var.bucket_name
+    GCS_CLIENT_EMAIL            = google_service_account.gcs-admin.email
+    GCS_PRIVATE_KEY_SECRET_NAME = google_secret_manager_secret.sa_key_secret.secret_id
+    SOURCE_SHA                  = data.archive_file.functions.output_md5 # necessary to trigger function update when archive changes
   }
 
   event_trigger {
@@ -103,7 +133,6 @@ resource "google_cloudfunctions_function" "revision-creator" {
       retry = true
     }
   }
-
 }
 
 resource "google_cloud_run_service" "default" {
