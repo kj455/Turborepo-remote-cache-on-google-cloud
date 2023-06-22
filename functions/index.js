@@ -1,15 +1,16 @@
 const { google } = require('googleapis');
 const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
+
 const run = google.run('v1');
 
-const secretManagerServiceClient = new SecretManagerServiceClient();
+const secretManger = new SecretManagerServiceClient();
 
 exports.createRevision = async (event, _context) => {
-  const parsedEvent = parseEventMessage(event);
+  const decodedEvent = decodeEventMessage(event);
 
-  console.log('Event: ', parsedEvent);
+  console.log('Event: ', decodedEvent);
 
-  const { tag, action } = parsedEvent;
+  const { tag, action } = decodedEvent;
 
   if (!validateTag(tag) || !validateAction(action)) {
     console.error('Skipped to create revision');
@@ -100,7 +101,7 @@ exports.createRevision = async (event, _context) => {
   }
 };
 
-function parseEventMessage(event) {
+function decodeEventMessage(event) {
   const pubSubMessage = event.data;
   const decodedData = JSON.parse(
     Buffer.from(pubSubMessage, 'base64').toString()
@@ -137,7 +138,7 @@ function getEnv() {
 
 async function getSecret(secretName) {
   const { projectId } = getEnv();
-  const [version] = await secretManagerServiceClient.accessSecretVersion({
+  const [version] = await secretManger.accessSecretVersion({
     name: `projects/${projectId}/secrets/${secretName}/versions/latest`,
   });
 
