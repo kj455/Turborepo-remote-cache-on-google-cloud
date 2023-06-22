@@ -58,3 +58,5 @@ This repository provides a streamlined process for setting up and managing a sel
 Note: If you push another image into the Artifact Registry, a new revision will be created automatically.
 
 Enjoy your self-hosted Turborepo remote cache!
+
+**Any feature requests or pull requests are welcome!**
