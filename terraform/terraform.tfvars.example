@@ -1,5 +1,6 @@
-project_id      = ""
-region          = "" # ex. asia-northeast1
-bucket_name     = ""
-bucket_location = "" # ex. ASIA-NORTHEAST1
-turbo_token     = ""
+project_id            = ""
+region                = ""
+bucket_name           = ""
+bucket_location       = ""
+turbo_token           = ""
+allow_unauthenticated = false

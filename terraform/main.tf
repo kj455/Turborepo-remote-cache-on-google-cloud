@@ -20,12 +20,18 @@ resource "google_storage_bucket" "turborepo-remote-cache" {
 
   lifecycle_rule {
     condition {
-      age = 7
+      age = var.bucket_lifecycle_age
     }
     action {
       type = "Delete"
     }
   }
+}
+
+resource "google_storage_bucket" "turborepo-remote-cache-fn" {
+  name          = "${var.bucket_name}-fn"
+  location      = var.bucket_location
+  force_destroy = true
 }
 
 resource "google_service_account" "gcs-admin" {
@@ -95,7 +101,7 @@ data "archive_file" "functions" {
 
 resource "google_storage_bucket_object" "archive" {
   name   = "functions_${data.archive_file.functions.output_md5}.zip"
-  bucket = google_storage_bucket.turborepo-remote-cache.name
+  bucket = google_storage_bucket.turborepo-remote-cache-fn.name
   source = data.archive_file.functions.output_path
 }
 
@@ -111,7 +117,7 @@ resource "google_cloudfunctions_function" "revision-creator" {
   runtime     = "nodejs18"
 
   available_memory_mb   = 128
-  source_archive_bucket = google_storage_bucket.turborepo-remote-cache.name
+  source_archive_bucket = google_storage_bucket.turborepo-remote-cache-fn.name
   source_archive_object = google_storage_bucket_object.archive.output_name
   entry_point           = "createRevision"
 
@@ -149,6 +155,8 @@ resource "google_cloud_run_service" "default" {
 }
 
 data "google_iam_policy" "noauth" {
+  count = var.allow_unauthenticated ? 1 : 0
+
   binding {
     role = "roles/run.invoker"
     members = [
@@ -158,9 +166,11 @@ data "google_iam_policy" "noauth" {
 }
 
 resource "google_cloud_run_service_iam_policy" "noauth" {
+  count = var.allow_unauthenticated ? 1 : 0
+
   location = google_cloud_run_service.default.location
   project  = google_cloud_run_service.default.project
   service  = google_cloud_run_service.default.name
 
-  policy_data = data.google_iam_policy.noauth.policy_data
+  policy_data = data.google_iam_policy.noauth[0].policy_data
 }
